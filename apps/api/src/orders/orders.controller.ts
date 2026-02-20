@@ -10,7 +10,6 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -47,7 +46,7 @@ export class OrdersController {
         productId: item.productId,
         qty: item.qty,
         notes: item.notes,
-        chosenOptions: ((item.chosenOptions ?? {}) as unknown) as Prisma.JsonValue,
+        chosenOptions: (item.chosenOptions ?? {}) as unknown,
       })),
     );
   }

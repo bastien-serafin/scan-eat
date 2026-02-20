@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import type { OrderStatus } from './dto/update-order-status.dto';
@@ -18,7 +17,7 @@ export class OrdersService {
       productId: string;
       qty: number;
       notes?: string;
-      chosenOptions: Prisma.JsonValue;
+      chosenOptions: unknown;
     }[],
   ) {
     const establishment = await this.prisma.establishment.findUnique({ where: { slug } });
@@ -52,6 +51,18 @@ export class OrdersService {
       0,
     );
 
+    const orderItems = items.map((item) => ({
+      qty: item.qty,
+      unitPrice: Number(priceByProduct.get(item.productId) ?? 0),
+      notes: item.notes,
+      chosenOptions: item.chosenOptions as any,
+      product: {
+        connect: {
+          id: item.productId,
+        },
+      },
+    }));
+
     const order = await this.prisma.order.create({
       data: {
         establishmentId: establishment.id,
@@ -59,13 +70,7 @@ export class OrdersService {
         total,
         status: 'NOUVELLE',
         items: {
-          create: items.map((item) => ({
-            productId: item.productId,
-            qty: item.qty,
-            unitPrice: Number(priceByProduct.get(item.productId) ?? 0),
-            notes: item.notes,
-            chosenOptions: item.chosenOptions,
-          })) as Prisma.OrderItemUncheckedCreateWithoutOrderInput[],
+          create: orderItems,
         },
       },
       include: {
