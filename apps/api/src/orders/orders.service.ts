@@ -18,7 +18,7 @@ export class OrdersService {
       productId: string;
       qty: number;
       notes?: string;
-      chosenOptions: Prisma.InputJsonValue;
+      chosenOptions: Prisma.JsonValue;
     }[],
   ) {
     const establishment = await this.prisma.establishment.findUnique({ where: { slug } });
@@ -44,7 +44,9 @@ export class OrdersService {
       throw new BadRequestException('Un ou plusieurs produits sont invalides');
     }
 
-    const priceByProduct = new Map(products.map((p) => [p.id, Number(p.price)]));
+    const priceByProduct = new Map(
+      products.map((p: { id: string; price: unknown }) => [p.id, Number(p.price)]),
+    );
     const total = items.reduce(
       (sum, item) => sum + Number(priceByProduct.get(item.productId) ?? 0) * item.qty,
       0,
@@ -63,7 +65,7 @@ export class OrdersService {
             unitPrice: Number(priceByProduct.get(item.productId) ?? 0),
             notes: item.notes,
             chosenOptions: item.chosenOptions,
-          })),
+          })) as Prisma.OrderItemUncheckedCreateWithoutOrderInput[],
         },
       },
       include: {

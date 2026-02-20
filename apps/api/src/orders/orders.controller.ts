@@ -47,7 +47,7 @@ export class OrdersController {
         productId: item.productId,
         qty: item.qty,
         notes: item.notes,
-        chosenOptions: (item.chosenOptions ?? {}) as Prisma.InputJsonValue,
+        chosenOptions: ((item.chosenOptions ?? {}) as unknown) as Prisma.JsonValue,
       })),
     );
   }
