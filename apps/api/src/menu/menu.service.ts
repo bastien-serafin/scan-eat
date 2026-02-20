@@ -29,7 +29,7 @@ export class MenuService {
       throw new NotFoundException('Etablissement introuvable');
     }
 
-    const table = establishment.tables.find((t) => t.id === tableId);
+    const table = establishment.tables.find((t: { id: string }) => t.id === tableId);
     if (!table) {
       throw new NotFoundException('Table introuvable');
     }

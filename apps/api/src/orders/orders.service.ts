@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import type { OrderStatus } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
@@ -10,7 +11,16 @@ export class OrdersService {
     private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
-  async create(slug: string, tableId: string, items: { productId: string; qty: number; notes?: string; chosenOptions: Prisma.JsonObject }[]) {
+  async create(
+    slug: string,
+    tableId: string,
+    items: {
+      productId: string;
+      qty: number;
+      notes?: string;
+      chosenOptions: Prisma.InputJsonValue;
+    }[],
+  ) {
     const establishment = await this.prisma.establishment.findUnique({ where: { slug } });
     if (!establishment) {
       throw new NotFoundException('Etablissement introuvable');
@@ -34,20 +44,23 @@ export class OrdersService {
       throw new BadRequestException('Un ou plusieurs produits sont invalides');
     }
 
-    const priceByProduct = new Map(products.map((p) => [p.id, p.price]));
-    const total = items.reduce((sum, item) => sum + (priceByProduct.get(item.productId) ?? 0) * item.qty, 0);
+    const priceByProduct = new Map(products.map((p) => [p.id, Number(p.price)]));
+    const total = items.reduce(
+      (sum, item) => sum + Number(priceByProduct.get(item.productId) ?? 0) * item.qty,
+      0,
+    );
 
     const order = await this.prisma.order.create({
       data: {
         establishmentId: establishment.id,
         tableId,
         total,
-        status: OrderStatus.NOUVELLE,
+        status: 'NOUVELLE',
         items: {
           create: items.map((item) => ({
             productId: item.productId,
             qty: item.qty,
-            unitPrice: priceByProduct.get(item.productId) ?? 0,
+            unitPrice: Number(priceByProduct.get(item.productId) ?? 0),
             notes: item.notes,
             chosenOptions: item.chosenOptions,
           })),
